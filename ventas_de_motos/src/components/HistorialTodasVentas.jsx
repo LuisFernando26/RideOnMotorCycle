@@ -1,0 +1,115 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
+export const HistorialVentasEmpleados = () => {
+    const [ventas, setVentas] = useState([]);
+    const [filtroEstado, setFiltroEstado] = useState("Todos");
+    const [busqueda, setBusqueda] = useState("");
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        axios.get("http://localhost:3001/api/ventas/verTodasLasVentas")
+            .then((res) => setVentas(res.data))
+            .catch((err) => console.error("Error al obtener las ventas:", err));
+    }, []);
+
+    const ventasFiltradas = ventas.filter((venta) => {
+        const coincideEstado = filtroEstado.toLowerCase() === "todos" || venta.estado.toLowerCase() === filtroEstado.toLowerCase();
+        const coincideBusqueda = venta.nombre_cliente.toLowerCase().includes(busqueda.toLowerCase()) || venta.marca.toLowerCase().includes(busqueda.toLowerCase()) ||
+            venta.modelo.toLowerCase().includes(busqueda.toLowerCase());
+
+        return coincideEstado && coincideBusqueda;
+    });
+
+    const volverAlHome = () => {
+        navigate("/home");
+    };
+
+    return (
+        <div className="px-8 py-10 mt-5 w-full mx-auto text-white bg-gray-900 min-h-screen">
+            <h1 className="text-3xl font-bold mb-6 text-yellow-400">Historial de Ventas de Todos los Clientes</h1>
+
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+                <input
+                    type="text"
+                    placeholder="Buscar por cliente, marca o modelo..."
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    className="w-full md:w-1/2 px-4 py-2 bg-gray-800 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+                <select
+                    className="w-full md:w-1/4 px-4 py-2 bg-gray-800 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    value={filtroEstado}
+                    onChange={(e) => setFiltroEstado(e.target.value)}
+                >
+                    <option value="Todos">Todos</option>
+                    <option value="Completada">Completada</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Cancelada">Cancelada</option>
+                </select>
+            </div>
+
+            {ventasFiltradas.length > 0 ? (
+                <div className="overflow-x-auto bg-gray-800 rounded-lg shadow-lg">
+                    <table className="min-w-full divide-y divide-gray-700">
+                        <thead className="bg-black">
+                            <tr>
+                                {["ID", "Cliente", "Moto", "Fecha Estimada", "Precio", "Estado"].map((header) => (
+                                    <th
+                                        key={header}
+                                        className="px-6 py-3 text-left text-sm font-bold text-yellow-400 uppercase tracking-wider"
+                                    >
+                                        {header}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+
+                        <tbody className="divide-y divide-gray-700">
+                            {ventasFiltradas.map((venta) => (
+                                <tr key={venta.id_venta}>
+                                    <td className="px-6 py-4 text-sm font-bold">{venta.id_venta}</td>
+                                    <td className="px-6 py-4 text-sm font-bold">{venta.nombre_cliente}</td>
+                                    <td className="px-6 py-4 text-sm font-bold">{venta.nombre} - {venta.marca} - {venta.modelo}</td>
+                                    <td className="px-6 py-4 text-sm font-bold">{venta.fecha_estimada.split("T")[0]}</td>
+                                    <td className="px-6 py-4 text-sm font-bold">${venta.precio}</td>
+                                    <td
+                                        className={`px-6 py-4 text-sm font-medium ${venta.estado.toLowerCase() === "completada"
+                                            ? "text-green-400"
+                                            : venta.estado.toLowerCase() === "pendiente"
+                                                ? "text-blue-400"
+                                                : venta.estado.toLowerCase() === "cancelada"
+                                                    ? "text-yellow-500"
+                                                    : "text-white"
+                                            }`}
+                                    >
+                                        {venta.estado}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            ) : (
+                <div className="w-full flex justify-center mt-20">
+                    <div className="bg-gray-800 px-8 py-6 rounded-2xl shadow-lg border border-gray-700 max-w-md text-center">
+                        <p className="text-yellow-400 text-xl font-semibold tracking-wide">
+                            No se encontraron ventas
+                        </p>
+                        <p className="text-gray-400 mt-2 text-sm">Intenta otro filtro o búsqueda.</p>
+                    </div>
+                </div>
+            )}
+
+            <div className="flex justify-center mt-10 ">
+                <button
+                    onClick={volverAlHome}
+                    className="cursor-pointer px-8 py-3 font-bold text-white bg-gray-900 border border-white rounded-3xl hover:bg-yellow-400 hover:text-black transition"
+                >
+                    Volver
+                </button>
+            </div>
+        </div>
+    );
+};
